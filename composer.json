@@ -1,0 +1,14 @@
+{
+    "name": "iciondrive/multisite-clone",
+    "description": "Clones an existing site into a new site in a multi-site installation. Plugin developed for the \"Ici On Drive\" platform.",
+    "type": "wordpress-plugin",
+    "version": "1.0.0",
+    "license": "GPLv2 or later",
+    "authors": [
+        {
+            "name": "Thomas Navarro",
+            "email": "thomas.navarro@outlook.com"
+        }
+    ],
+    "require": {}
+}
