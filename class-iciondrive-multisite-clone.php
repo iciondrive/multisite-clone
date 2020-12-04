@@ -78,11 +78,13 @@ if (!class_exists('IOD_Multisite_Clone')) {
 
             $this->post_type = 'store_request';
 
+            $this->uniquid = uniqid();
+
             // Default args
             $this->args = [
                 'domain' => get_network()->domain,
-                'path' => '/mon-commerce-'.uniqid(),
-                'title' => 'Mon commerce ('.uniqid().')',
+                'path' => '/mon-commerce-'.$this->uniquid,
+                'title' => 'Mon commerce ('.$this->uniquid.')',
                 'user_id' => 2,
                 'options' => ['public' => 1],
             ];
@@ -116,6 +118,10 @@ if (!class_exists('IOD_Multisite_Clone')) {
                     $actions['edit'] = str_replace('Modifier', 'Vérifier les informations', $actions['edit']);
                     $actions['trash'] = str_replace('Corbeille', 'Rejeter la demande', $actions['trash']);
                     $actions['approved'] = '<a href="'.wp_nonce_url(admin_url('/edit.php?post='.$post->ID.'&action=duplicate_site&post_type=store_request'), 'duplicate_site_'.$post->ID).'" style="color:#059669;" aria-label="Créer la boutique" rel="permalink">Créer la boutique</a>';
+
+                    if ('publish' == $post->post_status) {
+                        $actions['approved'] = '<a href="" style="pointer-events:none;color:#059669;" aria-label="Créer la boutique" rel="permalink"><del>Créer la boutique</del></a>';
+                    }
                 }
             }
 
@@ -159,7 +165,7 @@ if (!class_exists('IOD_Multisite_Clone')) {
             // Define home URL
             $this->home_url = get_home_url($this->to_site_id);
 
-            // Define this site for this user
+            // Define user
             IOD_Helpers::maybe_set_primary_site($this->user_id, $this->to_site_id);
 
             // Bypass limit server if possible
@@ -174,14 +180,16 @@ if (!class_exists('IOD_Multisite_Clone')) {
 
             // Update data new site
             switch_to_blog($this->to_site_id);
-            $attachments = $this->set_attachment();
 
             // Update attachment
+            $attachments = $this->set_attachment();
             $this->options['business_customization']['logo'] = $attachments['logo'];
             $this->options['business_customization']['cover'] = $attachments['cover'];
 
+            // Update options
             $this->business_update_fields();
             $this->woocommerce_update_options();
+
             restore_current_blog();
 
             // Update post status
@@ -396,12 +404,17 @@ if (!class_exists('IOD_Multisite_Clone')) {
 
         private function copy_files()
         {
+            switch_to_blog(get_current_network_id());
+            $favicon_id = get_option('site_icon');
+            $iod_logo_id = get_theme_mod('custom_logo');
+
             $this->files_to_copy = [
                 'cover' => $this->options['business_customization']['cover'],
                 'logo' => $this->options['business_customization']['logo'],
+                'favicon' => acf_get_attachment($favicon_id),
+                'iod_logo' => acf_get_attachment($iod_logo_id),
             ];
 
-            switch_to_blog(get_current_network_id());
             $wp_upload_info = wp_upload_dir();
             $this->from_dir_path = str_replace(' ', '\\ ', trailingslashit($wp_upload_info['basedir']));
 
