@@ -104,6 +104,8 @@ if (!class_exists('IOD_Multisite_Clone')) {
 
                 // Update default role by shop_manager
                 add_action('wpmu_new_blog', [$this, 'update_role'], 10, 2);
+
+                add_action('wp_new_user_notification_email', [$this, 'new_user_notification_email'], 10, 3);
             }
         }
 
@@ -215,9 +217,34 @@ if (!class_exists('IOD_Multisite_Clone')) {
 
                 // Create user
                 $user_id = wpmu_create_user($user_name, $password, $email);
+
+                wp_new_user_notification($user_id, $password);
             }
 
             return !is_wp_error($user_id) ? $user_id : false;
+        }
+
+        public function new_user_notification_email($wp_new_user_notification_email, $user, $blogname)
+        {
+            $message = get_site_option('welcome_email');
+            $key = get_password_reset_key($user);
+
+            $wp_new_user_notification_email['headers'] = 'From: Niort - ICI ON DRIVE <no-reply@iciondrive.fr>';
+            $wp_new_user_notification_email['subject'] = 'Bienvenue sur ICI ON DRIVE';
+            $wp_new_user_notification_email['message'] = str_replace([
+                'USERNAME',
+                'SITE_NAME',
+                'BLOG_URL',
+                'CREATE_PASSWORD',
+            ], [
+                $user->user_login,
+                $blogname,
+                network_site_url(),
+                network_site_url("mon-espace?action=rp&key=$key&login=".rawurlencode($user->user_login), 'login'),
+            ],
+            $message);
+
+            return $wp_new_user_notification_email;
         }
 
         private function create_site()
